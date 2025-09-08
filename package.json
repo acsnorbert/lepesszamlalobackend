@@ -1,0 +1,26 @@
+{
+  "name": "lepesszamlalobackend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "\t",
+  "scripts": {
+    "start": "node server",
+    "dev": "nodemon server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acsnorbert/lepesszamlalobackend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/acsnorbert/lepesszamlalobackend/issues"
+  },
+  "homepage": "https://github.com/acsnorbert/lepesszamlalobackend#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
