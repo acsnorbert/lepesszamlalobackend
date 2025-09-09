@@ -1,0 +1,45 @@
+### GET / route
+
+GET http://localhost:3000
+Content-Type: application/json
+
+### GET users
+
+GET http://localhost:3000/users
+Content-Type: application/json
+
+### GET one user
+
+GET http://localhost:3000/users/3
+Content-Type: application/json
+
+### POST new user
+
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+    "name": "Timi",  
+    "email": "timi@gmail.com", 
+    "password": "Valami123"
+}
+###
+
+DELETE http://localhost:3000/users/2
+Content-Type: application/json
+
+{
+    "name": "Timi",  
+    "age": 33, 
+    "gender": "female"
+}
+
+###
+PATCH http://localhost:3000/users/1
+Content-Type: application/json
+{
+    "id":1,
+    "name": "Jozsi",  
+    "age": 33, 
+    "gender": "male" 
+}
