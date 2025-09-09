@@ -17,13 +17,13 @@ loadUsers();
 // ENDPOINTS
  
 app.get('/', (req, res) => {
-  res.send('Backend made by - 13.a szoftverfejlesztő ')
+  res.send({msg:'Backend made by - 13.a Bajai SZC Türr István Technikum szoftverfejlesztő'})
 });
  
- 
+
 // GET all users
 app.get("/users", (req, res) => {
-    res.send(users);
+    res.send((users));
 })
  
  
@@ -34,16 +34,19 @@ app.get("/users/:id", (req, res) => {
     if (idx > -1) {
         return res.send(users[idx]);
     }
-    return res.send("Nincs ilyen azonosítójú felhasználó!");
+    return res.send({msg:'Nincs ilyen azonosítójú felhasználó!'});
 });
  
 // POST new user
 app.post('/users', (req, res) => {
     let data = req.body;
-    users.push(data);
+    if (IsEmailExists(data.email)){
+        return res.status(400).send({msg: 'Ez az email cím már regisztrálva van!'})
+    }
     data.id = getNextID();
+    users.push(data);
     saveUsers();
-    res.send(users);
+    res.send({msg:'A felhasználó sikeresen regisztrálva'});
 });
  
 // DELETE user by id
@@ -55,7 +58,7 @@ app.delete('/users/:id', (req, res) => {
         saveUsers();
         return res.send("A felhasználó törölve.");
     }
-    return res.send("Nincs ilyen azonosítójú felhasználó!")
+    return res.send({msg:'Nincs ilyen azonosítójú felhasználó!'})
 });
  
 // UPDATE user by id
@@ -67,7 +70,7 @@ app.patch('/users/:id', (req, res) => {
         users[idx] = data;
         users[idx].id = Number(id);
         saveUsers();
-        res.send("A felhasználó módosítva")
+        res.send({msg:'A felhasználó módosítva'})
     }
 });
  
@@ -87,8 +90,7 @@ function getNextID() {
     }
     return users[maxIndex].id + 1
 }
- 
- 
+
 function loadUsers() {
     if (fs.existsSync(USERS_FILE)) {
         const raw = fs.readFileSync(USERS_FILE);
@@ -105,4 +107,15 @@ function loadUsers() {
  
 function saveUsers() {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users));
+}
+
+function IsEmailExists(email){
+    let exists= false;
+    users.forEach(user => {
+        if(user.email==email){
+            exists=true
+            return
+        }
+    });
+    return exists
 }
