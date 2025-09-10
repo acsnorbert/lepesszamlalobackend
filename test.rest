@@ -43,3 +43,11 @@ Content-Type: application/json
     "age": 33, 
     "gender": "male" 
 }
+
+### Post Login
+POST http://localhost:3000/users/login
+Content-Type: application/json
+{
+    "email": "teszt@gmail.com",
+    "password": "Teszt123!"
+}

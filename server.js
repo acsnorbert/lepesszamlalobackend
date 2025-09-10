@@ -48,7 +48,21 @@ app.post('/users', (req, res) => {
     saveUsers();
     res.send({msg:'A felhasználó sikeresen regisztrálva'});
 });
- 
+
+//post check user login
+app.post('/users/login', (req,res) =>{
+    let {email,password} = req.body
+    let loggeduser = {}
+    users.forEach(user => {
+        if (user.email == email && user.password == password){
+            loggeduser = user
+            return
+        }
+        res.send(loggeduser)
+    })
+})
+
+
 // DELETE user by id
 app.delete('/users/:id', (req, res) => {
     let id = req.params.id;
