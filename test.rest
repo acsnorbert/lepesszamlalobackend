@@ -1,91 +1,111 @@
-### GET / route
+### GET mainpage
 
-GET http://localhost:3000/
+GET http://localhost:3000
 Content-Type: application/json
+
 
 ### GET users
 
 GET http://localhost:3000/users
 Content-Type: application/json
 
+
 ### GET one user
 
-GET http://localhost:3000/users/1
+GET http://localhost:3000/users/3
 Content-Type: application/json
 
-### POST User
-
+### POST new user
 POST http://localhost:3000/users
 Content-Type: application/json
 
 {
-    "id": 0,
-    "name": "Termesz3",
-    "email": "termeszvok232@gmail.com",
-    "password": "termike1232434."
+    "name": "Jozsef",
+    "email": "tesztererre@teszt.hu",
+    "password": "123456789"
 }
 
-### DELETE user
 
-DELETE http://localhost:3000/users/4
+### DELETE user by id
+DELETE http://localhost:3000/users/2
 Content-Type: application/json
+
 
 ### PATCH user by id
 PATCH http://localhost:3000/users/1
 Content-Type: application/json
 
 {
-    "name": "Termesz2",
-    "age": 25,
-    "gender": "male"
+    "name": "Pityu",
+    "email": "teszt123@teszt.hu",
+    "password": "Titkos123"
 }
 
-### POST login
 
+### POST login
 POST http://localhost:3000/users/login
 Content-Type: application/json
 
 {
-    "email": "a@aa.com",
-    "password": "ASDasd123"
+    "email": "teszt@teszt.hu",
+    "password": "Jelszo123"
 }
 
-### Get all steps by userid
 
-GET http://localhost:3000/steps/user/1
+### PATCH password
+PATCH  http://localhost:3000/users/passmod
 Content-Type: application/json
 
-###GET one step by id 
+{
+    "id": 2,
+    "oldPassword": "Jelszo123",
+    "newPassword": "Cicakutya123"
+}
 
-GET http://localhost:3000/steps/1
+
+### PATCH name and email
+PATCH http://localhost:3000/users/profile
+Content-Type: application/json
+
+{
+    "id": 2,
+    "email": "test@test.hu",
+    "name": "Teszter Istvan"
+}
+
 
 ### POST new step by uid
 POST http://localhost:3000/steps/upload/8
 Content-Type: application/json
- 
+
 {
     "date": "2026-04-21",
     "count": 6000300
 }
- 
+
 ### GET one step by id
-GET http://localhost:3000/steps/2
+GET http://localhost:3000/steps/1
 Content-Type: application/json
- 
+
 ### GET all steps by uid
 GET http://localhost:3000/steps/user/4
 Content-Type: application/json
- 
+
 ### PATCH step by id
 PATCH http://localhost:3000/steps/2
 Content-Type: application/json
- 
+
 {
     "newDate": "2028-02-01",
     "newCount": 32400
 }
- 
- 
+
+
 ### DELETE step by id
 DELETE http://localhost:3000/steps/2
+Content-Type: application/json
+
+
+### DELETE all steps by uid
+DELETE http://localhost:3000/steps/users/8
 Content-Type: application/json
