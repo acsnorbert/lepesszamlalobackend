@@ -1,296 +1,310 @@
-const express = require('express');
+const express = require('express')
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors');
-
-
-const app = express();
+var cors = require('cors')
+const { json } = require('stream/consumers');
+const app = express()
 
 // Middleware-ek
-app.use(cors());
-app.use(express.json()); // json formatum megkövetelése
-app.use(express.urlencoded({extended: true})); // req body-n keresztül átmenjenek az adatok
+app.use(cors())
+app.use(express.json()) //json formátum megkövetelése
+app.use(express.urlencoded({extended: true})); //req body-n keresztül átmenjenek az adatok
 
-let users = [];
-let steps = [];
-const USERS_FILE = path.join(__dirname, 'users.json');
-const STEPS_FILE = path.join(__dirname, 'steps.json');
 
-loadUsers();
-loadSteps();
+let users = []
+let stepdata = []
+const USERS_FILE = path.join(__dirname, 'user.json')
+const STEPS_FILE = path.join(__dirname, 'steps.json')
 
+loadUsers()
+loadStepdata()
 // ENDPOINTS
 
 app.get('/', (req, res) => {
-    res.send('Türr Pista - 13.a szoftverfejlesztő lépegetés számláló backend api')
-});
-
-// ------------------- USERS --------------------
-
-// GET all users
-app.get("/users", (req, res) => {
-    res.send(users);
+  res.send({msg:'Backend API by Bajai SZC Türr István Technikum - 13.A Szoftverfejlesztő '})
 })
 
-// UPDATE user password
-app.patch('/users/passmod', (req, res) => {
-    console.log(req.body)
-    let {id, oldPassword, newPassword} = req.body;
-    let idx = users.findIndex(user => user.id == id);
-    if (idx === -1) {
-        return res.status(400).send({msg: "Nincs ilyen azonosítójú felhasználó!"});
-    }
-    if (users[idx].password !== oldPassword) {
-        return res.status(400).send({msg: "A régi jelszó nem egyezik!"});
-    }
-    users[idx].password = newPassword;
-    saveUsers();
-    res.send({msg: "A jelszó sikeresen módosítva!"});
-});
+// --------------------------USERS----------------------------
 
-// UPDATE user email and name
-app.patch('/users/profile', (req, res) => {
-    let {id, email, name} = req.body;
-    let idx = users.findIndex(user => user.id == id);
-    if (idx === -1) {
-        return res.status(400).send({msg: "Nincs ilyen azonosítójú felhasználó!"});
-    }
+// GET all users
 
-    if (email !== users[idx].email) {
-        if (isEmailExists(email)) {
-            return res.status(400).send({msg: 'Ez az email cím már regisztrálva van.'});
-        }
-        users[idx].email = email;
-    }
-
-    if (name) {
-        users[idx].name = name;
-    }
-
-    saveUsers();
-    res.send({msg: "A felhasználó módosítva"});
+app.get('/users', (req, res)=>{
+    res.send(users)
 });
 
 // GET one user by id
-app.get("/users/:id", (req, res) => {
-    let id = req.params.id;
-    let idx = users.findIndex(user => user.id == id);
-    if (idx > -1) {
-        return res.send(users[idx]);
+
+app.get('/users/:id',(req,res)=>{
+    let id = Number(req.params.id)
+    let idx = users.findIndex(user => Number(user.id) === id)
+    if(idx >-1){
+        return res.send(users[idx])
     }
-    return res.status(400).send({msg: "Nincs ilyen azonosítójú felhasználó!"});
-});
+    return res.status(400).send({msg:"Nincs ilyen azonosítójú felhasználó!"})
+})
+
 
 // POST new user
-app.post('/users', (req, res) => {
-    let data = req.body;
-    if (isEmailExists(data.email)) {
-        return res.status(400).send({msg: 'Ez az email cím már regisztrálva van.'})
-    }
-    users.push(data);
-    data.id = getNextID();
-    saveUsers();
-    res.send({msg: 'A felhasználó regisztrálva!'});
+app.post('/users', (req,res)=>{
+ let data = req.body;
+ if(isEmailExist(data.email)){
+    return res.status(400).send({msg:"bademail"})
+ }
+ data.id = getNextId();
+ users.push(data)
+ res.send({msg: "Sikeres regisztráció!"})
+ saveUsers()
 });
 
-// DELETE user by id
-app.delete('/users/:id', (req, res) => {
-    let id = req.params.id;
-    let idx = users.findIndex(user => user.id == id);
-    if (idx > -1) {
-        users.splice(idx, 1);
-        saveUsers();
-        return res.send({msg: "A felhasználó törölve."});
+//POST user login
+
+app.post('/users/login', (req, res) => {
+    let {email, password} = req.body;
+    let loggeduser = {}
+    users.forEach(user=> {
+        if(user.email == email && user.password == password){
+            loggeduser = user
+            return
+        }
+
+    })
+    res.send(loggeduser)
+})
+// DELETE user
+app.delete('/users/:id', (req,res)=>{
+    let id = Number(req.params.id)
+    let idx = users.findIndex(user => Number(user.id) === id)
+    if(idx >-1){
+        users.splice(idx,1)
+        saveUsers()
+        return res.send({msg:"A felhasználó törölve."})
     }
-    return res.status(400).send({msg: "Nincs ilyen azonosítójú felhasználó!"})
-});
+    return res.status(400).send({msg:"Nincs ilyen azonosítójú felhasználó!"})
+})
 
 // UPDATE user by id
+
 app.patch('/users/:id', (req, res) => {
-    let id = req.params.id;
-    let idx = users.findIndex(user => user.id == id);
-    let data = req.body;
+    let id = Number(req.params.id)
+    let data = req.body
+    let idx = users.findIndex(user => Number(user.id) === id)
     if (idx > -1) {
-        users[idx] = data;
-        users[idx].id = Number(id);
-        saveUsers();
-        res.send({msg: "A felhasználó módosítva"})
-    }
-});
-
-// POST check user login
-app.post('/users/login', (req, res) => {
-    let { email, password } = req.body;
-    let loggedUser = {};
-    users.forEach(user => {
-        if (user.email == email && user.password == password) {
-            loggedUser = user;
-            return;
+        if (data.email && data.email != users[idx].email) {
+            let exists = users.some(user => user.email === data.email && Number(user.id) !== id)
+            if (exists) {
+                return res.status(400).send({ msg: "Ez az email cím már foglalt!" })
+            }
+            users[idx].email = data.email
         }
-    });
-    res.send(loggedUser);
-});
-
-
-// -------------------- STEPS ---------------
-
-// GET all steps by userId
-app.get('/steps/user/:uid', (req, res) => {
-    let uid = Number(req.params.uid);
-    let idx = users.findIndex(user => user.id == uid)
-
-    if (idx == -1) {
-        res.status(400).send({msg: "Nincs ilyen felhasznalo"});
-        return;
+        if (data.name) users[idx].name = data.name
+        saveUsers()
+        return res.send({ msg: "A felhasználó módosítva.", user: users[idx] })
     }
+    return res.status(400).send({ msg: "Nincs ilyen azonosítójú felhasználó!" })
+})
 
-    res.send(steps.filter(step => step.uid == uid));
-
-    /* let matchSteps = [];
-    steps.forEach(step => {
-        if (step.uid === uid) {
-            matchSteps.push(step);
+//UPDATE password
+app.patch('/users/changepass/:id', (req, res) => {
+    let id = Number(req.params.id)
+    let data = req.body
+    let idx = users.findIndex(user => Number(user.id) === id)
+    if (idx > -1) {
+        if (data.oldpass && data.newpass) {
+            if (data.oldpass != users[idx].password) {
+                return res.status(400).send({ msg: "A régi jelszó nem megfelelő!" })
+            }
+            users[idx].password = data.newpass
+            saveUsers()
+            return res.send({ msg: "A jelszó módosítva.",user : users[idx] })
         }
-    });
-    res.send(matchSteps); */
-});
+        return res.status(400).send({ msg: "Nincsenek meg a szükséges adatok!" })
+    }
+    return res.status(400).send({ msg: "Nincs ilyen azonosítójú felhasználó!" })
+})
 
+
+// --------------------------STEPS----------------------------
+
+// GET all steps of all users
+app.get('/steps',(req,res) => {
+    res.send(stepdata)
+})
+
+
+// GET all steps by userID
+
+app.get('/steps/user/:uid',(req,res) => {
+    let usersteps = []
+    let uid = Number(req.params.uid)
+
+    if(uid == -1){
+        res.status(400).send({msg: "Nincs ilyen felhasználó!"})
+    }
+    for (let i = 0; i < stepdata.length; i++) {
+        if(stepdata[i].uid == uid){
+            usersteps.push(stepdata[i])
+        }
+        
+    }
+    res.send(usersteps)
+})
 
 // GET one step by id
 
-app.get('/steps/:id', (req, res) => {
-    let id = req.params.id;
-    let idx = steps.findIndex(step => step.id == id);
-    if (idx > -1) {
-        return res.send(steps[idx]);
+app.get('/steps/:id', (req,res) =>{
+    let id = Number(req.params.id)
+    let idx = stepdata.findIndex(step => Number(step.id) === id)
+    if(idx >-1){
+        return res.send(stepdata[idx])
     }
-    return res.status(400).send({msg: "Nincs ilyen azonosítójú lépésszám!"});
-});
-
-// POST new step by uid
-
-app.post('/steps/upload/:uid', (req, res) => {
-    let data = req.body;
-    let uid = Number(req.params.uid);
-    steps.push(data);
-    data.id = getNextStepID();
-    data.uid = uid;
-    saveSteps();
-    res.send({msg: 'A lépés felvéve!'});
+    return res.status(400).send({msg:"Nincs ilyen azonosítójú lépés!"})
 })
 
-// PATCH step by id
-app.patch('/steps/:id', (req, res) => {
+//POST new stepdata
+app.post('/steps',(req,res) =>{
     let data = req.body;
-    let id = Number(req.params.id);
-
-    let newDate = data.newDate;
-    let newCount = Number(data.newCount);
-
-    steps.forEach(step => {
-        if (step.id === id) {
-            step.date = newDate;
-            step.count = newCount;
-        }
-    });
-    saveSteps();
-    res.send({msg: 'Sikeres módosítás'})
+    data.id = getNextStepId();
+    stepdata.push(data)
+    saveStepdata()
+    res.send({msg: "Sikeres adatfelvitel!"})
 });
 
 
-// DELETE step by id
-app.delete('/steps/:id', (req, res) => {
-    let id = Number(req.params.id);
-    let idx = steps.findIndex(step => step.id == id);
 
+//PATCH stepdata by id
+app.patch('/steps/:id',(req,res) => {
+    let id = Number(req.params.id)
+    let data = req.body
+    let idx = stepdata.findIndex(step => Number(step.id) === id)
     if (idx > -1) {
-        steps.splice(idx, 1);
-        saveSteps();
-        return res.status(200).send({msg: 'Sikeres törlés'})
+        if (data.date) stepdata[idx].date = data.date
+        if (data.stepcount) stepdata[idx].stepcount = data.stepcount
+        saveStepdata()
+        return res.send({ msg: "A lépésszám módosítva.", step: stepdata[idx] })
     }
-    return res.status(400).send({msg: "Nincs ilyen azonosítójú lépésszám!"});
+    return res.status(400).send({ msg: "Nincs ilyen azonosítójú lépésadat" })
 })
 
 
-// DELETE all steps by userId
-app.delete('/steps/users/:uid', (req, res) => {
-    let uid = Number(req.params.uid);
-    let idx = users.findIndex(user => user.id == uid)
+// DELETE stepdata
 
-    if (idx == -1) {
-        res.status(400).send({msg: "Nincs ilyen felhasználó!"});
-        return;
+app.delete('/steps/:id',(req,res) =>{
+    let id = Number(req.params.id)
+    let idx = stepdata.findIndex(step => Number(step.id) === id)
+    stepdata.splice(idx,1)
+    saveStepdata()
+    res.send({msg:"Sikeres törlés!"})
+})
+
+// DELETE all steps by userID
+app.delete('/steps/user/:uid', (req,res) =>{
+    let uid = Number(req.params.uid)
+
+    if(uid == -1){
+        res.status(400).send({msg: "Nincs ilyen felhasználó!"})
     }
-
-    let newSteps = steps.filter(step => step.uid != uid);
-    steps = newSteps;
-
-    saveSteps();
-    res.send({msg: 'Lépésadatok sikeresen törölve'})
-});
-
-app.listen(3000);
-
-function getNextID() {
-    const maxId = users.reduce((max, u) => {
-        const id = Number(u?.id);
-        return Number.isFinite(id) && id > max ? id : max;
-    }, 0);
-    return maxId + 1;
-}
-
-function getNextStepID() {
-    const maxId = steps.reduce((max, u) => {
-        const id = Number(u?.id);
-        return Number.isFinite(id) && id > max ? id : max;
-    }, 0);
-    return maxId + 1;
-}
-
-function loadSteps(){
-    if (fs.existsSync(STEPS_FILE)) {
-        const raw = fs.readFileSync(STEPS_FILE);
-        try {
-            steps = JSON.parse(raw);
-        } catch (err) {
-            console.log('Hiba', error)
-            steps = []
+    for (let i = 0; i < stepdata.length; i++) {
+        if(stepdata[i].uid == uid){
+            stepdata.splice(i,1)
+            i--
         }
-    } else {
-        saveSteps();
+        
     }
+    saveStepdata()
+    res.send({msg: "Sikeresen törölve!"})
+})
+
+// DELETE all steps by users
+app.delete('/steps',(req,res) =>{
+    stepdata = []
+    saveStepdata()
+    res.send({msg:"Összes adat törölve"})
+})
+
+
+
+
+app.listen(3000)
+function getNextStepId(){
+    let nextID = 1;
+
+    if (stepdata.length == 0){
+        return nextID
+    }
+    
+    let maxIndex = 0
+    for (let i = 0; i < stepdata.length; i++) {
+        if(stepdata[i].id > stepdata[maxIndex].id){
+            maxIndex = i
+        }
+        
+    }
+    return stepdata[maxIndex].id + 1
+}
+function getNextId(){
+    let nextID = 1;
+
+    if (users.length == 0){
+        return nextID
+    }
+    
+    let maxIndex = 0
+    for (let i = 0; i < users.length; i++) {
+        if(users[i].id > users[maxIndex].id){
+            maxIndex = i
+        }
+        
+    }
+    return users[maxIndex].id + 1
 }
 
-function saveSteps() {
-    fs.writeFileSync(STEPS_FILE, JSON.stringify(steps));
-}
-
-function loadUsers() {
-    if (fs.existsSync(USERS_FILE)) {
-        const raw = fs.readFileSync(USERS_FILE);
-        try {
-            users = JSON.parse(raw);
-        } catch (error) {
-            console.log('Hiba az adatok beolvasása közben', error)
+function loadUsers(){
+    if(fs.existsSync(USERS_FILE)){
+        const raw = fs.readFileSync(USERS_FILE)
+        try{
+            users = JSON.parse(raw)
+        }
+        catch(err){
+            console.log("Hiba az adatok beolvasása közben!", err)
             users = [];
+
         }
-    } else {
-        saveUsers();
     }
+    else{
+        saveUsers()
+    }
+   
 }
 
-function saveUsers() {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users));
+function saveUsers(){
+    fs.writeFileSync(USERS_FILE,JSON.stringify(users))
 }
-
-
-function isEmailExists(email) {
-    let exists = false;
-    users.forEach(user => {
-        if (user.email == email) {
-            exists = true;
-            return exists;
+function isEmailExist(email){
+    let exists = false
+    users.forEach(user=> {
+        if(user.email == email){
+            exists = true
+            return
         }
-    });
-    return exists;
+    })
+    return exists
+}
+function saveStepdata(){
+    fs.writeFileSync(STEPS_FILE,JSON.stringify(stepdata))
+}
+function loadStepdata(){
+    if(fs.existsSync(STEPS_FILE)){
+        const raw = fs.readFileSync(STEPS_FILE)
+        try{
+            stepdata = JSON.parse(raw)
+        }
+        catch(err){
+            console.log("Hiba az adatok beolvasása közben!", err)
+            stepdata = [];
+
+        }
+    }
+    else{
+        saveStepdata()
+    }
 }
